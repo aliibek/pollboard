@@ -67,16 +67,15 @@ function Navbar() {
                     </div>
                 ) : (
                     <button
-                        onClick={signInWithGoogle}
+                        onClick={() => signInWithGoogle()}
                         className="text-sm font-medium px-3 py-1.5 rounded-md transition-all duration-150 flex items-center gap-2"
                         style={{
                             background: 'var(--color-bg-stone)',
                             color:      'var(--color-text-secondary)',
                             border:     '1px solid var(--color-border-default)',
-                            height: '32px',
                         }}
                     >
-                        <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: '15px', height: '15px' }} />
+                        <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: '12px', height: '12px' }} />
                         Sign in
                     </button>
                 )}
