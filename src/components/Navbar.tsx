@@ -2,24 +2,23 @@ import { useNavigate } from 'react-router-dom'
 import useThemeStore from '../store/themeStore'
 
 function Navbar() {
-    const navigate       = useNavigate()
+    const navigate           = useNavigate()
     const { isDark, toggle } = useThemeStore()
 
     return (
         <nav
-            className="w-full px-4 sm:px-6 h-14 flex items-center justify-between"
+            className="w-full px-4 sm:px-6 h-16 flex items-center justify-between"
             style={{
                 borderBottom: '1px solid var(--color-border-default)',
                 background:   'var(--color-bg-page)',
             }}
         >
-      <span
-          className="text-base font-medium cursor-pointer"
-          style={{ color: 'var(--color-accent)' }}
-          onClick={() => navigate('/')}
-      >
-        PollBoard
-      </span>
+            <img
+                src="/colored-logo.svg"
+                alt="PollBoard"
+                style={{ height: '28px', cursor: 'pointer' }}
+                onClick={() => navigate('/')}
+            />
 
             <div className="flex items-center gap-3">
                 <button

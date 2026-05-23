@@ -19,9 +19,11 @@ function AppShell({ children }: Props) {
                     className="mx-auto flex items-center justify-between"
                     style={{ maxWidth: '720px' }}
                 >
-          <span className="text-sm font-medium" style={{ color: 'var(--color-accent)' }}>
-            PollBoard
-          </span>
+                    <img
+                        src="/colored-logo.svg"
+                        alt="PollBoard"
+                        style={{ height: '22px' }}
+                    />
                     <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             Fast, real-time polling for everyone
           </span>
