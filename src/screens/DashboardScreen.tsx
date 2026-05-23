@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import Modal from '../components/Modal'
 import { type Poll } from '../types'
 import { Trash2 } from 'lucide-react'
+import QRModal from '../components/QRModal'
 
 
 type PollWithCount = Poll & { voteCount: number }
@@ -54,6 +55,7 @@ function PollCard({
     const { addToast }        = useToastStore()
     const [copied, setCopied] = useState(false)
     const status              = getStatus(poll)
+    const [showQR, setShowQR] = useState(false)
 
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -125,6 +127,20 @@ function PollCard({
                     <button
                         onClick={e => {
                             e.stopPropagation()
+                            setShowQR(true)
+                        }}
+                        className="text-xs font-medium px-3 py-1.5 rounded-md transition-all duration-150"
+                        style={{
+                            background: 'var(--color-bg-stone)',
+                            color:      'var(--color-text-secondary)',
+                        }}
+                    >
+                        QR
+                    </button>
+
+                    <button
+                        onClick={e => {
+                            e.stopPropagation()
                             onDeleteClick(poll)
                         }}
                         className="flex items-center justify-center rounded-md transition-all duration-150"
@@ -144,6 +160,13 @@ function PollCard({
                 </div>
 
             </div>
+
+            <QRModal
+                open={showQR}
+                onClose={() => setShowQR(false)}
+                pollId={poll.id}
+                question={poll.question}
+            />
         </div>
     )
 }

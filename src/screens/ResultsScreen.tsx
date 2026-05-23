@@ -6,6 +6,7 @@ import useVotes from '../hooks/useVotes'
 import useRealtime from '../hooks/useRealtime'
 import useVoterID from '../hooks/useVoterID'
 import { type Vote } from '../types'
+import QRModal from '../components/QRModal'
 
 function ResultsScreen() {
     const { pollId } = useParams<{ pollId: string }>()
@@ -17,6 +18,8 @@ function ResultsScreen() {
 
     const [closing, setClosing] = useState(false)
     const [copied,  setCopied]  = useState(false)
+
+    const [showQR, setShowQR] = useState(false)
 
     useRealtime(pollId ?? '', (vote: Vote) => addVote(vote))
 
@@ -132,6 +135,17 @@ function ResultsScreen() {
                 >
                     {copied ? '✓ Copied!' : 'Copy vote link'}
                 </button>
+
+                <button
+                    onClick={() => setShowQR(true)}
+                    className="text-xs font-medium px-3 py-1.5 rounded-md transition-all duration-150"
+                    style={{
+                        background: 'var(--color-bg-stone)',
+                        color:      'var(--color-text-secondary)',
+                    }}
+                >
+                    QR code
+                </button>
             </div>
 
             {/* Question */}
@@ -212,6 +226,13 @@ function ResultsScreen() {
                     </button>
                 )}
             </div>
+
+            <QRModal
+                open={showQR}
+                onClose={() => setShowQR(false)}
+                pollId={pollId ?? ''}
+                question={poll.question}
+            />
 
         </div>
     )
