@@ -130,7 +130,7 @@ function DashboardScreen() {
     }
 
     return (
-        <div>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
             {/* Header */}
             <div
