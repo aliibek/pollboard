@@ -186,7 +186,7 @@ function VoteScreen() {
                         The creator of this poll requires voters to sign in with Google.
                     </p>
                     <button
-                        onClick={signInWithGoogle}
+                        onClick={() => signInWithGoogle(`/vote/${pollId}`)}
                         className="flex items-center gap-2 mx-auto px-4 py-2 rounded-md text-sm font-medium transition-all duration-150"
                         style={{
                             background: 'var(--color-accent)',
