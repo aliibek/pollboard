@@ -5,6 +5,8 @@ import useVoterID from '../hooks/useVoterID'
 import useToastStore from '../store/toastStore'
 import { type Poll } from '../types'
 
+type PollWithCount = Poll & { voteCount: number }
+
 function getStatus(poll: Poll): 'open' | 'closed' | 'expired' {
     if (poll.status === 'closed') return 'closed'
     if (poll.expires_at && new Date(poll.expires_at) < new Date()) return 'expired'
@@ -37,7 +39,7 @@ function StatusBadge({ status }: { status: 'open' | 'closed' | 'expired' }) {
     )
 }
 
-function PollCard({ poll }: { poll: Poll }) {
+function PollCard({ poll }: { poll: PollWithCount }) {
     const navigate            = useNavigate()
     const { addToast }        = useToastStore()
     const [copied, setCopied] = useState(false)
@@ -82,6 +84,10 @@ function PollCard({ poll }: { poll: Poll }) {
                         <StatusBadge status={status} />
                         <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
               {poll.options.length} options
+            </span>
+                        <span style={{ color: 'var(--color-border-strong)', fontSize: '10px' }}>·</span>
+                        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              {poll.voteCount} {poll.voteCount === 1 ? 'vote' : 'votes'}
             </span>
                         {poll.expires_at && status === 'open' && (
                             <>
@@ -130,9 +136,8 @@ function DashboardScreen() {
     }
 
     return (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div>
 
-            {/* Header */}
             <div
                 className="flex items-center justify-between mb-8 pb-6"
                 style={{ borderBottom: '1px solid var(--color-border-default)' }}
@@ -163,7 +168,6 @@ function DashboardScreen() {
                 </button>
             </div>
 
-            {/* Empty state */}
             {polls.length === 0 ? (
                 <div
                     className="text-center py-20 rounded-md"
