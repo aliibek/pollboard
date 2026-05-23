@@ -20,15 +20,16 @@ function getExpiresAt(expiry: Expiry): string | null {
 }
 
 function CreatePollScreen() {
-    const navigate          = useNavigate()
-    const voterId           = useVoterID()
-    const { addToast }      = useToastStore()
+    const navigate     = useNavigate()
+    const voterId      = useVoterID()
+    const { addToast } = useToastStore()
 
-    const [question, setQuestion]     = useState('')
-    const [options, setOptions]       = useState(['', ''])
-    const [expiry, setExpiry]         = useState<Expiry>('none')
-    const [submitting, setSubmitting] = useState(false)
-    const [error, setError]           = useState<string | null>(null)
+    const [question,     setQuestion]     = useState('')
+    const [options,      setOptions]      = useState(['', ''])
+    const [expiry,       setExpiry]       = useState<Expiry>('none')
+    const [submitting,   setSubmitting]   = useState(false)
+    const [error,        setError]        = useState<string | null>(null)
+    const [requiresAuth, setRequiresAuth] = useState(false)
 
     const addOption = () => {
         if (options.length < 6) setOptions([...options, ''])
@@ -57,11 +58,12 @@ function CreatePollScreen() {
         const { data, error: sbError } = await supabase
             .from('polls')
             .insert({
-                question:   question.trim(),
-                options:    options.filter(o => o.trim().length > 0).map(o => o.trim()),
-                status:     'open',
-                creator_id: voterId,
-                expires_at: getExpiresAt(expiry),
+                question:      question.trim(),
+                options:       options.filter(o => o.trim().length > 0).map(o => o.trim()),
+                status:        'open',
+                creator_id:    voterId,
+                expires_at:    getExpiresAt(expiry),
+                requires_auth: requiresAuth,
             })
             .select()
             .single()
@@ -171,7 +173,7 @@ function CreatePollScreen() {
             </div>
 
             {/* Expiry */}
-            <div className="mb-8">
+            <div className="mb-6">
                 <label className="text-sm font-medium mb-2 block" style={{ color: 'var(--color-text-secondary)' }}>
                     Expires
                 </label>
@@ -191,6 +193,31 @@ function CreatePollScreen() {
                         </button>
                     ))}
                 </div>
+            </div>
+
+            {/* Require sign in */}
+            <div
+                className="mb-8 flex items-center gap-3 px-4 py-3 rounded-md"
+                style={{
+                    background: 'var(--color-bg-subtle)',
+                    border:     '1px solid var(--color-border-default)',
+                }}
+            >
+                <input
+                    type="checkbox"
+                    id="requires_auth"
+                    checked={requiresAuth}
+                    onChange={e => setRequiresAuth(e.target.checked)}
+                    className="w-4 h-4 rounded cursor-pointer"
+                    style={{ accentColor: 'var(--color-accent)' }}
+                />
+                <label
+                    htmlFor="requires_auth"
+                    className="text-sm cursor-pointer flex-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                >
+                    Require Google sign in to vote
+                </label>
             </div>
 
             {/* Error */}

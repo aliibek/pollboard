@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import useThemeStore from '../store/themeStore'
+import useAuth from '../hooks/useAuth'
 
 function Navbar() {
     const navigate           = useNavigate()
     const { isDark, toggle } = useThemeStore()
+    const { user, signInWithGoogle, signOut } = useAuth()
 
     return (
         <nav
@@ -16,7 +18,7 @@ function Navbar() {
             <img
                 src="/colored-logo.svg"
                 alt="PollBoard"
-                style={{ height: '28px', cursor: 'pointer' }}
+                style={{ height: '40px', cursor: 'pointer' }}
                 onClick={() => navigate('/')}
             />
 
@@ -32,6 +34,52 @@ function Navbar() {
                 >
                     {isDark ? '☀️' : '🌙'}
                 </button>
+
+                {user ? (
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            {user.user_metadata?.avatar_url && (
+                                <img
+                                    src={user.user_metadata.avatar_url}
+                                    alt="avatar"
+                                    className="rounded-full"
+                                    style={{ width: '28px', height: '28px' }}
+                                />
+                            )}
+                            <span
+                                className="text-xs font-medium hidden sm:block"
+                                style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                {user.user_metadata?.full_name?.split(' ')[0] ?? user.email}
+              </span>
+                        </div>
+                        <button
+                            onClick={signOut}
+                            className="text-sm font-medium px-3 py-1.5 rounded-md transition-all duration-150"
+                            style={{
+                                background: 'var(--color-bg-stone)',
+                                color:      'var(--color-text-secondary)',
+                                height: '32px',
+                            }}
+                        >
+                            Sign out
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        onClick={signInWithGoogle}
+                        className="text-sm font-medium px-3 py-1.5 rounded-md transition-all duration-150 flex items-center gap-2"
+                        style={{
+                            background: 'var(--color-bg-stone)',
+                            color:      'var(--color-text-secondary)',
+                            border:     '1px solid var(--color-border-default)',
+                            height: '32px',
+                        }}
+                    >
+                        <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: '15px', height: '15px' }} />
+                        Sign in
+                    </button>
+                )}
 
                 <button
                     onClick={() => navigate('/create')}

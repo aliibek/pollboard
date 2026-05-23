@@ -1,23 +1,24 @@
 export type Poll = {
-    id: string
-    question: string
-    options: string[]
-    status: 'open' | 'closed'
-    creator_id: string
-    expires_at: string | null
-    created_at: string
+    id:            string
+    question:      string
+    options:       string[]
+    status:        'open' | 'closed'
+    creator_id:    string
+    expires_at:    string | null
+    created_at:    string
+    requires_auth: boolean
 }
 
 export type Vote = {
-    id: string
-    poll_id: string
+    id:           string
+    poll_id:      string
     option_index: number
-    voter_id: string
-    created_at: string
+    voter_id:     string
+    created_at:   string
 }
 
 export type ToastType = {
-    id: string
+    id:      string
     message: string
-    type: 'success' | 'error'
+    type:    'success' | 'error'
 }

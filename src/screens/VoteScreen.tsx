@@ -3,16 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import usePoll from '../hooks/usePoll'
 import useVoterID from '../hooks/useVoterID'
+import useAuth from '../hooks/useAuth'
 
 function VoteScreen() {
     const { pollId }  = useParams<{ pollId: string }>()
     const navigate    = useNavigate()
     const voterId     = useVoterID()
+    const { user, signInWithGoogle } = useAuth()
     const { poll, loading, error } = usePoll(pollId ?? '')
 
-    const [selected,   setSelected]   = useState<number | null>(null)
-    const [submitting, setSubmitting] = useState(false)
-    const [voteError,  setVoteError]  = useState<string | null>(null)
+    const [selected,     setSelected]     = useState<number | null>(null)
+    const [submitting,   setSubmitting]   = useState(false)
+    const [voteError,    setVoteError]    = useState<string | null>(null)
     const [alreadyVoted, setAlreadyVoted] = useState(false)
 
     const isPollClosed =
@@ -51,7 +53,7 @@ function VoteScreen() {
         return (
             <div className="flex items-center justify-center py-24">
                 <div
-                    className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
+                    className="w-6 h-6 rounded-full border-2 animate-spin"
                     style={{ borderColor: 'var(--color-accent)', borderTopColor: 'transparent' }}
                 />
             </div>
@@ -111,6 +113,13 @@ function VoteScreen() {
     if (isPollClosed) {
         return (
             <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+                <button
+                    onClick={() => navigate('/')}
+                    className="text-sm mb-6 flex items-center gap-1"
+                    style={{ color: 'var(--color-text-muted)' }}
+                >
+                    ← Back
+                </button>
                 <p
                     className="text-2xl font-medium mb-2"
                     style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.03em' }}
@@ -140,9 +149,62 @@ function VoteScreen() {
         )
     }
 
+    // --- Requires auth but not signed in ---
+    if (poll.requires_auth && !user) {
+        return (
+            <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+                <button
+                    onClick={() => navigate('/')}
+                    className="text-sm mb-6 flex items-center gap-1"
+                    style={{ color: 'var(--color-text-muted)' }}
+                >
+                    ← Back
+                </button>
+                <p
+                    className="text-2xl font-medium mb-3"
+                    style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.03em' }}
+                >
+                    {poll.question}
+                </p>
+                <div
+                    className="rounded-md px-5 py-8 text-center mt-8"
+                    style={{
+                        background: 'var(--color-bg-subtle)',
+                        border:     '1px solid var(--color-border-default)',
+                    }}
+                >
+                    <p
+                        className="text-sm font-medium mb-2"
+                        style={{ color: 'var(--color-text-primary)' }}
+                    >
+                        Sign in required to vote
+                    </p>
+                    <p
+                        className="text-xs mb-6"
+                        style={{ color: 'var(--color-text-muted)' }}
+                    >
+                        The creator of this poll requires voters to sign in with Google.
+                    </p>
+                    <button
+                        onClick={signInWithGoogle}
+                        className="flex items-center gap-2 mx-auto px-4 py-2 rounded-md text-sm font-medium transition-all duration-150"
+                        style={{
+                            background: 'var(--color-accent)',
+                            color:      'var(--color-text-on-teal)',
+                        }}
+                    >
+                        <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: '14px', height: '14px' }} />
+                        Sign in with Google
+                    </button>
+                </div>
+            </div>
+        )
+    }
+
     // --- Vote screen ---
     return (
         <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+
             <button
                 onClick={() => navigate('/')}
                 className="text-sm mb-6 flex items-center gap-1"
@@ -150,6 +212,7 @@ function VoteScreen() {
             >
                 ← Back
             </button>
+
             <p
                 className="text-2xl font-medium mb-8"
                 style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.03em' }}
@@ -164,10 +227,10 @@ function VoteScreen() {
                         onClick={() => setSelected(i)}
                         className="w-full text-left px-4 py-3 rounded-md text-sm transition-all duration-150"
                         style={{
-                            background:  selected === i ? 'var(--color-bg-teal-subtle)' : 'var(--color-bg-card)',
-                            border:      `1px solid ${selected === i ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
-                            color:       selected === i ? 'var(--color-text-teal)' : 'var(--color-text-primary)',
-                            fontWeight:  selected === i ? '500' : '400',
+                            background: selected === i ? 'var(--color-bg-teal-subtle)' : 'var(--color-bg-card)',
+                            border:     `1px solid ${selected === i ? 'var(--color-accent)' : 'var(--color-border-default)'}`,
+                            color:      selected === i ? 'var(--color-text-teal)' : 'var(--color-text-primary)',
+                            fontWeight: selected === i ? '500' : '400',
                         }}
                     >
             <span className="mr-3" style={{ color: 'var(--color-text-muted)' }}>

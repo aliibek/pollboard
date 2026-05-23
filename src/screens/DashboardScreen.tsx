@@ -134,8 +134,8 @@ function PollCard({
                         style={{
                             background: 'var(--color-bg-stone)',
                             color:      'var(--color-text-secondary)',
-                            height:     '30px',
-                            width:      '30px',
+                            height:     '28px',
+                            width:      '28px',
                             flexShrink: 0,
                         }}
                         title="Show QR code"
