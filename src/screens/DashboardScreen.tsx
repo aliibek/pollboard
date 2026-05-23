@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import usePolls from '../hooks/usePolls'
 import useVoterID from '../hooks/useVoterID'
+import useToastStore from '../store/toastStore'
 import { type Poll } from '../types'
 
 function getStatus(poll: Poll): 'open' | 'closed' | 'expired' {
@@ -37,14 +38,16 @@ function StatusBadge({ status }: { status: 'open' | 'closed' | 'expired' }) {
 }
 
 function PollCard({ poll }: { poll: Poll }) {
-    const navigate             = useNavigate()
-    const [copied, setCopied]  = useState(false)
-    const status               = getStatus(poll)
+    const navigate            = useNavigate()
+    const { addToast }        = useToastStore()
+    const [copied, setCopied] = useState(false)
+    const status              = getStatus(poll)
 
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation()
         navigator.clipboard.writeText(`${window.location.origin}/vote/${poll.id}`)
         setCopied(true)
+        addToast('Vote link copied!', 'success')
         setTimeout(() => setCopied(false), 2000)
     }
 
@@ -54,28 +57,39 @@ function PollCard({ poll }: { poll: Poll }) {
             style={{
                 background: 'var(--color-bg-card)',
                 border:     '1px solid var(--color-border-default)',
+                boxShadow:  '0 1px 3px 0 rgb(0 0 0 / 0.06)',
             }}
             onClick={() => navigate(`/results/${poll.id}`)}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-border-strong)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border-default)'}
+            onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--color-border-strong)'
+                e.currentTarget.style.boxShadow   = '0 2px 6px 0 rgb(0 0 0 / 0.08)'
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--color-border-default)'
+                e.currentTarget.style.boxShadow   = '0 1px 3px 0 rgb(0 0 0 / 0.06)'
+            }}
         >
             <div className="flex items-start justify-between gap-4">
+
                 <div className="flex-1 min-w-0">
                     <p
-                        className="text-sm font-medium mb-1 truncate"
+                        className="text-sm font-medium mb-2 truncate"
                         style={{ color: 'var(--color-text-primary)' }}
                     >
                         {poll.question}
                     </p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <StatusBadge status={status} />
                         <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
               {poll.options.length} options
             </span>
                         {poll.expires_at && status === 'open' && (
-                            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                closes {new Date(poll.expires_at).toLocaleDateString()}
-              </span>
+                            <>
+                                <span style={{ color: 'var(--color-border-strong)', fontSize: '10px' }}>·</span>
+                                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  closes {new Date(poll.expires_at).toLocaleDateString()}
+                </span>
+                            </>
                         )}
                     </div>
                 </div>
@@ -91,17 +105,17 @@ function PollCard({ poll }: { poll: Poll }) {
                     >
                         {copied ? '✓ Copied!' : 'Copy link'}
                     </button>
-
                     <span style={{ color: 'var(--color-text-muted)', fontSize: '18px' }}>→</span>
                 </div>
+
             </div>
         </div>
     )
 }
 
 function DashboardScreen() {
-    const navigate        = useNavigate()
-    const voterId         = useVoterID()
+    const navigate           = useNavigate()
+    const voterId            = useVoterID()
     const { polls, loading } = usePolls(voterId)
 
     if (loading) {
@@ -119,7 +133,10 @@ function DashboardScreen() {
         <div>
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div
+                className="flex items-center justify-between mb-8 pb-6"
+                style={{ borderBottom: '1px solid var(--color-border-default)' }}
+            >
                 <div>
                     <h1
                         className="text-2xl font-medium"
@@ -166,7 +183,7 @@ function DashboardScreen() {
                     </p>
                     <button
                         onClick={() => navigate('/create')}
-                        className="text-sm font-medium px-4 py-2 rounded-md"
+                        className="text-sm font-medium px-4 py-2 rounded-md transition-all duration-150"
                         style={{
                             background: 'var(--color-accent)',
                             color:      'var(--color-text-on-teal)',

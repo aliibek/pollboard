@@ -8,7 +8,7 @@ function Navbar() {
             className="w-full px-4 sm:px-6 h-14 flex items-center justify-between"
             style={{
                 borderBottom: '1px solid var(--color-border-default)',
-                background: 'var(--color-bg-page)',
+                background:   'var(--color-bg-page)',
             }}
         >
       <span
@@ -21,13 +21,13 @@ function Navbar() {
 
             <button
                 onClick={() => navigate('/create')}
-                className="text-sm font-medium px-4 py-1.5 rounded transition-all duration-150"
+                className="text-sm font-medium px-4 py-1.5 rounded-md transition-all duration-150"
                 style={{
                     background: 'var(--color-accent)',
-                    color: 'var(--color-text-on-teal)',
+                    color:      'var(--color-text-on-teal)',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-accent-hover)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'var(--color-accent)')}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--color-accent-hover)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--color-accent)'}
             >
                 + Create poll
             </button>

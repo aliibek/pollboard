@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import useVoterID from '../hooks/useVoterID'
+import useToastStore from '../store/toastStore'
 
 type Expiry = 'none' | '1h' | '24h' | '7d'
 
@@ -19,14 +20,15 @@ function getExpiresAt(expiry: Expiry): string | null {
 }
 
 function CreatePollScreen() {
-    const navigate = useNavigate()
-    const voterId = useVoterID()
+    const navigate          = useNavigate()
+    const voterId           = useVoterID()
+    const { addToast }      = useToastStore()
 
-    const [question, setQuestion]   = useState('')
-    const [options, setOptions]     = useState(['', ''])
-    const [expiry, setExpiry]       = useState<Expiry>('none')
+    const [question, setQuestion]     = useState('')
+    const [options, setOptions]       = useState(['', ''])
+    const [expiry, setExpiry]         = useState<Expiry>('none')
     const [submitting, setSubmitting] = useState(false)
-    const [error, setError]         = useState<string | null>(null)
+    const [error, setError]           = useState<string | null>(null)
 
     const addOption = () => {
         if (options.length < 6) setOptions([...options, ''])
@@ -66,11 +68,13 @@ function CreatePollScreen() {
 
         setSubmitting(false)
 
-        if (sbError) {
+        if (sbError || !data) {
             setError('Something went wrong. Please try again.')
+            addToast('Something went wrong. Please try again.', 'error')
             return
         }
 
+        addToast('Poll created!', 'success')
         navigate(`/results/${data.id}`)
     }
 
@@ -85,7 +89,10 @@ function CreatePollScreen() {
                 ← Back
             </button>
 
-            <h1 className="text-2xl font-medium mb-8" style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.03em' }}>
+            <h1
+                className="text-2xl font-medium mb-8"
+                style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.03em' }}
+            >
                 Create a poll
             </h1>
 
@@ -106,9 +113,9 @@ function CreatePollScreen() {
                     rows={2}
                     className="w-full text-sm rounded-md px-3 py-2.5 resize-none transition-all duration-150 focus:outline-none"
                     style={{
-                        background:   'var(--color-bg-card)',
-                        border:       '1px solid var(--color-border-default)',
-                        color:        'var(--color-text-primary)',
+                        background: 'var(--color-bg-card)',
+                        border:     '1px solid var(--color-border-default)',
+                        color:      'var(--color-text-primary)',
                     }}
                     onFocus={e => e.currentTarget.style.borderColor = 'var(--color-border-teal)'}
                     onBlur={e  => e.currentTarget.style.borderColor = 'var(--color-border-default)'}
@@ -142,8 +149,8 @@ function CreatePollScreen() {
                                 disabled={options.length <= 2}
                                 className="w-8 h-8 flex items-center justify-center rounded text-lg transition-all duration-150"
                                 style={{
-                                    color:   options.length <= 2 ? 'var(--color-border-strong)' : 'var(--color-text-muted)',
-                                    cursor:  options.length <= 2 ? 'not-allowed' : 'pointer',
+                                    color:  options.length <= 2 ? 'var(--color-border-strong)' : 'var(--color-text-muted)',
+                                    cursor: options.length <= 2 ? 'not-allowed' : 'pointer',
                                 }}
                             >
                                 ×
@@ -175,9 +182,9 @@ function CreatePollScreen() {
                             onClick={() => setExpiry(opt.value)}
                             className="text-sm px-3 py-1.5 rounded-md transition-all duration-150"
                             style={{
-                                background:  expiry === opt.value ? 'var(--color-accent)' : 'var(--color-bg-stone)',
-                                color:       expiry === opt.value ? 'var(--color-text-on-teal)' : 'var(--color-text-secondary)',
-                                border:      '1px solid transparent',
+                                background: expiry === opt.value ? 'var(--color-accent)' : 'var(--color-bg-stone)',
+                                color:      expiry === opt.value ? 'var(--color-text-on-teal)' : 'var(--color-text-secondary)',
+                                border:     '1px solid transparent',
                             }}
                         >
                             {opt.label}
