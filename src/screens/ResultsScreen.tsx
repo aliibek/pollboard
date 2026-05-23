@@ -7,6 +7,7 @@ import useRealtime from '../hooks/useRealtime'
 import useVoterID from '../hooks/useVoterID'
 import { type Vote } from '../types'
 import QRModal from '../components/QRModal'
+import { QrCode } from 'lucide-react'
 
 function ResultsScreen() {
     const { pollId } = useParams<{ pollId: string }>()
@@ -138,13 +139,17 @@ function ResultsScreen() {
 
                 <button
                     onClick={() => setShowQR(true)}
-                    className="text-xs font-medium px-3 py-1.5 rounded-md transition-all duration-150"
+                    className="flex items-center justify-center rounded-md transition-all duration-150"
                     style={{
                         background: 'var(--color-bg-stone)',
                         color:      'var(--color-text-secondary)',
+                        height:     '30px',
+                        width:      '30px',
+                        flexShrink: 0,
                     }}
+                    title="Show QR code"
                 >
-                    QR code
+                    <QrCode size={14} />
                 </button>
             </div>
 

@@ -8,6 +8,7 @@ import Modal from '../components/Modal'
 import { type Poll } from '../types'
 import { Trash2 } from 'lucide-react'
 import QRModal from '../components/QRModal'
+import { QrCode } from 'lucide-react'
 
 
 type PollWithCount = Poll & { voteCount: number }
@@ -129,13 +130,17 @@ function PollCard({
                             e.stopPropagation()
                             setShowQR(true)
                         }}
-                        className="text-xs font-medium px-3 py-1.5 rounded-md transition-all duration-150"
+                        className="flex items-center justify-center rounded-md transition-all duration-150"
                         style={{
                             background: 'var(--color-bg-stone)',
                             color:      'var(--color-text-secondary)',
+                            height:     '30px',
+                            width:      '30px',
+                            flexShrink: 0,
                         }}
+                        title="Show QR code"
                     >
-                        QR
+                        <QrCode size={14} />
                     </button>
 
                     <button
