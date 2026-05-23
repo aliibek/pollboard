@@ -31,7 +31,11 @@ function usePolls(voterId: string) {
         fetchPolls()
     }, [voterId])
 
-    return { polls, loading }
+    const removePoll = (id: string) => {
+        setPolls(prev => prev.filter(p => p.id !== id))
+    }
+
+    return { polls, loading, removePoll }
 }
 
 export default usePolls

@@ -36,13 +36,21 @@ function ResultsScreen() {
     }
 
     const handleClose = async () => {
-        if (!pollId) return
+        if (!pollId || !voterId) return
         setClosing(true)
-        await supabase
+
+        const { error } = await supabase
             .from('polls')
             .update({ status: 'closed' })
             .eq('id', pollId)
+            .eq('creator_id', voterId)
+
         setClosing(false)
+
+        if (error) {
+            console.error(error)
+            return
+        }
         window.location.reload()
     }
 
@@ -76,6 +84,14 @@ function ResultsScreen() {
 
     return (
         <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+
+            <button
+                onClick={() => navigate('/')}
+                className="text-sm mb-6 flex items-center gap-1"
+                style={{ color: 'var(--color-text-muted)' }}
+            >
+                ← Back
+            </button>
 
             {/* Header */}
             <div className="flex items-center justify-between mb-2">

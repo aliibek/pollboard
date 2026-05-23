@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import usePolls from '../hooks/usePolls'
 import useVoterID from '../hooks/useVoterID'
 import useToastStore from '../store/toastStore'
+import { supabase } from '../lib/supabase'
+import Modal from '../components/Modal'
 import { type Poll } from '../types'
+import { Trash2 } from 'lucide-react'
+
 
 type PollWithCount = Poll & { voteCount: number }
 
@@ -39,7 +43,13 @@ function StatusBadge({ status }: { status: 'open' | 'closed' | 'expired' }) {
     )
 }
 
-function PollCard({ poll }: { poll: PollWithCount }) {
+function PollCard({
+                      poll,
+                      onDeleteClick,
+                  }: {
+    poll:          PollWithCount
+    onDeleteClick: (poll: PollWithCount) => void
+}) {
     const navigate            = useNavigate()
     const { addToast }        = useToastStore()
     const [copied, setCopied] = useState(false)
@@ -111,6 +121,25 @@ function PollCard({ poll }: { poll: PollWithCount }) {
                     >
                         {copied ? '✓ Copied!' : 'Copy link'}
                     </button>
+
+                    <button
+                        onClick={e => {
+                            e.stopPropagation()
+                            onDeleteClick(poll)
+                        }}
+                        className="flex items-center justify-center rounded-md transition-all duration-150"
+                        style={{
+                            background: 'var(--color-danger-bg)',
+                            color:      'var(--color-danger)',
+                            height:     '28px',
+                            width:      '28px',
+                            flexShrink: 0,
+                        }}
+                        title="Delete poll"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+
                     <span style={{ color: 'var(--color-text-muted)', fontSize: '18px' }}>→</span>
                 </div>
 
@@ -120,9 +149,34 @@ function PollCard({ poll }: { poll: PollWithCount }) {
 }
 
 function DashboardScreen() {
-    const navigate           = useNavigate()
-    const voterId            = useVoterID()
-    const { polls, loading } = usePolls(voterId)
+    const voterId                 = useVoterID()
+    const { polls, loading, removePoll } = usePolls(voterId)
+    const { addToast }            = useToastStore()
+
+    const [pollToDelete, setPollToDelete] = useState<PollWithCount | null>(null)
+    const [deleting, setDeleting]         = useState(false)
+
+    const handleDeleteConfirm = async () => {
+        if (!pollToDelete) return
+        setDeleting(true)
+
+        const { error } = await supabase
+            .from('polls')
+            .delete()
+            .eq('id', pollToDelete.id)
+
+        if (error) {
+            addToast('Failed to delete poll.', 'error')
+            setDeleting(false)
+            setPollToDelete(null)
+            return
+        }
+
+        removePoll(pollToDelete.id)
+        setPollToDelete(null)
+        setDeleting(false)
+        addToast('Poll deleted.', 'success')
+    }
 
     if (loading) {
         return (
@@ -153,19 +207,6 @@ function DashboardScreen() {
                         {polls.length} {polls.length === 1 ? 'poll' : 'polls'} created
                     </p>
                 </div>
-
-                <button
-                    onClick={() => navigate('/create')}
-                    className="text-sm font-medium px-4 py-2 rounded-md transition-all duration-150"
-                    style={{
-                        background: 'var(--color-accent)',
-                        color:      'var(--color-text-on-teal)',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-accent-hover)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--color-accent)'}
-                >
-                    + New poll
-                </button>
             </div>
 
             {polls.length === 0 ? (
@@ -182,27 +223,70 @@ function DashboardScreen() {
                     >
                         No polls yet
                     </p>
-                    <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
-                        Create your first poll and share it with anyone
+                    <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                        Click "+ Create poll" in the top right to get started
                     </p>
-                    <button
-                        onClick={() => navigate('/create')}
-                        className="text-sm font-medium px-4 py-2 rounded-md transition-all duration-150"
-                        style={{
-                            background: 'var(--color-accent)',
-                            color:      'var(--color-text-on-teal)',
-                        }}
-                    >
-                        Create a poll →
-                    </button>
                 </div>
             ) : (
                 <div className="flex flex-col gap-3">
                     {polls.map(poll => (
-                        <PollCard key={poll.id} poll={poll} />
+                        <PollCard
+                            key={poll.id}
+                            poll={poll}
+                            onDeleteClick={setPollToDelete}
+                        />
                     ))}
                 </div>
             )}
+
+            {/* Delete confirmation modal */}
+            <Modal
+                open={!!pollToDelete}
+                onClose={() => !deleting && setPollToDelete(null)}
+            >
+                <h2
+                    className="text-base font-medium mb-2"
+                    style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.02em' }}
+                >
+                    Delete poll?
+                </h2>
+                <p
+                    className="text-sm mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                >
+                    "{pollToDelete?.question}"
+                </p>
+                <p
+                    className="text-xs mb-6"
+                    style={{ color: 'var(--color-text-muted)' }}
+                >
+                    This will permanently delete the poll and all its votes. This cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setPollToDelete(null)}
+                        disabled={deleting}
+                        className="flex-1 h-10 text-sm font-medium rounded-md transition-all duration-150"
+                        style={{
+                            background: 'var(--color-bg-stone)',
+                            color:      'var(--color-text-secondary)',
+                        }}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleDeleteConfirm}
+                        disabled={deleting}
+                        className="flex-1 h-10 text-sm font-medium rounded-md transition-all duration-150"
+                        style={{
+                            background: 'var(--color-danger)',
+                            color:      '#fff',
+                        }}
+                    >
+                        {deleting ? 'Deleting...' : 'Delete'}
+                    </button>
+                </div>
+            </Modal>
 
         </div>
     )

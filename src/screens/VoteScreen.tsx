@@ -143,7 +143,13 @@ function VoteScreen() {
     // --- Vote screen ---
     return (
         <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-
+            <button
+                onClick={() => navigate('/')}
+                className="text-sm mb-6 flex items-center gap-1"
+                style={{ color: 'var(--color-text-muted)' }}
+            >
+                ← Back
+            </button>
             <p
                 className="text-2xl font-medium mb-8"
                 style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.03em' }}
