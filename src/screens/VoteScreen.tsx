@@ -208,7 +208,7 @@ function VoteScreen() {
             <button
                 onClick={() => navigate('/')}
                 className="text-sm mb-6 flex items-center gap-1"
-                style={{ color: 'var(--color-text-muted)' }}
+                style={{ color: 'var(--color-text-secondary)' }}
             >
                 ← Back
             </button>

@@ -18,7 +18,7 @@ function Navbar() {
             <img
                 src="/colored-logo.svg"
                 alt="PollBoard"
-                style={{ height: '40px', cursor: 'pointer' }}
+                style={{ height: '30px', cursor: 'pointer' }}
                 onClick={() => navigate('/')}
             />
 

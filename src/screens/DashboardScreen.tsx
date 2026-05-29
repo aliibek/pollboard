@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Trash2, QrCode, Link } from 'lucide-react'
 import usePolls from '../hooks/usePolls'
 import useVoterID from '../hooks/useVoterID'
 import useToastStore from '../store/toastStore'
+import useStats from '../hooks/useStats'
 import { supabase } from '../lib/supabase'
 import Modal from '../components/Modal'
-import { type Poll } from '../types'
-import { Trash2 } from 'lucide-react'
 import QRModal from '../components/QRModal'
-import { QrCode } from 'lucide-react'
+import { type Poll } from '../types'
 
 
-type PollWithCount = Poll & { voteCount: number }
+type PollWithCount = Poll & { voteCount: number; recentVotes: number }
 
 function getStatus(poll: Poll): 'open' | 'closed' | 'expired' {
     if (poll.status === 'closed') return 'closed'
@@ -55,8 +55,8 @@ function PollCard({
     const navigate            = useNavigate()
     const { addToast }        = useToastStore()
     const [copied, setCopied] = useState(false)
-    const status              = getStatus(poll)
     const [showQR, setShowQR] = useState(false)
+    const status              = getStatus(poll)
 
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -67,103 +67,148 @@ function PollCard({
     }
 
     return (
-        <div
-            className="rounded-md px-5 py-4 cursor-pointer transition-all duration-150"
-            style={{
-                background: 'var(--color-bg-card)',
-                border:     '1px solid var(--color-border-default)',
-                boxShadow:  '0 1px 3px 0 rgb(0 0 0 / 0.06)',
-            }}
-            onClick={() => navigate(`/results/${poll.id}`)}
-            onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--color-border-strong)'
-                e.currentTarget.style.boxShadow   = '0 2px 6px 0 rgb(0 0 0 / 0.08)'
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--color-border-default)'
-                e.currentTarget.style.boxShadow   = '0 1px 3px 0 rgb(0 0 0 / 0.06)'
-            }}
-        >
-            <div className="flex items-start justify-between gap-4">
+        <>
+            <div
+                className="rounded-md px-5 py-4 cursor-pointer transition-all duration-150"
+                style={{
+                    background: 'var(--color-bg-card)',
+                    border:     '1px solid var(--color-border-default)',
+                    boxShadow:  '0 1px 3px 0 rgb(0 0 0 / 0.06)',
+                }}
+                onClick={() => navigate(`/results/${poll.id}`)}
+                onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = 'var(--color-border-strong)'
+                    e.currentTarget.style.boxShadow   = '0 2px 6px 0 rgb(0 0 0 / 0.08)'
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = 'var(--color-border-default)'
+                    e.currentTarget.style.boxShadow   = '0 1px 3px 0 rgb(0 0 0 / 0.06)'
+                }}
+            >
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                        <p
+                            className="text-sm font-medium mb-2 truncate"
+                            style={{ color: 'var(--color-text-primary)' }}
+                        >
+                            {poll.question}
+                        </p>
 
-                <div className="flex-1 min-w-0">
-                    <p
-                        className="text-sm font-medium mb-2 truncate"
-                        style={{ color: 'var(--color-text-primary)' }}
-                    >
-                        {poll.question}
-                    </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <StatusBadge status={status} />
-                        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {poll.options.length} options
-            </span>
-                        <span style={{ color: 'var(--color-border-strong)', fontSize: '10px' }}>·</span>
-                        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {poll.voteCount} {poll.voteCount === 1 ? 'vote' : 'votes'}
-            </span>
-                        {poll.expires_at && status === 'open' && (
-                            <>
-                                <span style={{ color: 'var(--color-border-strong)', fontSize: '10px' }}>·</span>
-                                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                  closes {new Date(poll.expires_at).toLocaleDateString()}
+                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                            <StatusBadge status={status} />
+                            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                {poll.options.length} options
+              </span>
+                            <span style={{ color: 'var(--color-border-strong)', fontSize: '10px' }}>·</span>
+                            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                {poll.voteCount} {poll.voteCount === 1 ? 'vote' : 'votes'}
+              </span>
+                            {poll.expires_at && status === 'open' && (
+                                <>
+                                    <span style={{ color: 'var(--color-border-strong)', fontSize: '10px' }}>·</span>
+                                    <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                    closes {new Date(poll.expires_at).toLocaleDateString()}
+                  </span>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Options preview */}
+                        <div className="flex gap-1.5 flex-wrap">
+                            {poll.options.slice(0, 3).map((opt, i) => (
+                                <span
+                                    key={i}
+                                    className="text-xs px-2 py-0.5 rounded"
+                                    style={{
+                                        background: 'var(--color-bg-stone)',
+                                        color:      'var(--color-text-muted)',
+                                    }}
+                                >
+                  {opt}
                 </span>
-                            </>
+                            ))}
+                            {poll.options.length > 3 && (
+                                <span
+                                    className="text-xs px-2 py-0.5 rounded"
+                                    style={{
+                                        background: 'var(--color-bg-stone)',
+                                        color:      'var(--color-text-muted)',
+                                    }}
+                                >
+                  +{poll.options.length - 3} more
+                </span>
+                            )}
+                        </div>
+
+                        {/* Activity indicator */}
+                        {getStatus(poll) === 'open' && poll.recentVotes > 0 && (
+                            <div className="flex items-center gap-2 mt-2">
+                                <span
+                                    style={{
+                                        width:        '8px',
+                                        height:       '8px',
+                                        borderRadius: '50%',
+                                        display:      'inline-block',
+                                        flexShrink:   0,
+                                        background:   'var(--color-accent)',
+                                        animation:    'pulse-dot 2s ease-in-out infinite',
+                                    }}
+                                />
+                                <span className="text-xs" style={{ color: 'var(--color-accent)' }}>
+                                  {poll.recentVotes} {poll.recentVotes === 1 ? 'vote' : 'votes'} in the last hour
+                                </span>
+                            </div>
                         )}
                     </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            onClick={handleCopy}
+                            className="flex items-center justify-center rounded-md transition-all duration-150"
+                            style={{
+                                background: copied ? 'var(--color-accent-light)' : 'var(--color-bg-stone)',
+                                color:      copied ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                                height:     '30px',
+                                padding:    '0 10px',
+                                fontSize:   '12px',
+                                fontWeight: '500',
+                            }}
+                            title="Copy vote link"
+                        >
+                            {copied ? '✓' : <Link size={13} />}
+                        </button>
+
+                        <button
+                            onClick={e => { e.stopPropagation(); setShowQR(true) }}
+                            className="flex items-center justify-center rounded-md transition-all duration-150"
+                            style={{
+                                background: 'var(--color-bg-stone)',
+                                color:      'var(--color-text-secondary)',
+                                height:     '30px',
+                                width:      '30px',
+                            }}
+                            title="Show QR code"
+                        >
+                            <QrCode size={13} />
+                        </button>
+
+                        <button
+                            onClick={e => { e.stopPropagation(); onDeleteClick(poll) }}
+                            className="flex items-center justify-center rounded-md transition-all duration-150"
+                            style={{
+                                background: 'var(--color-danger-bg)',
+                                color:      'var(--color-danger)',
+                                height:     '30px',
+                                width:      '30px',
+                            }}
+                            title="Delete poll"
+                        >
+                            <Trash2 size={13} />
+                        </button>
+
+                        <span style={{ color: 'var(--color-text-muted)', fontSize: '18px' }}>→</span>
+                    </div>
                 </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                    <button
-                        onClick={handleCopy}
-                        className="text-xs font-medium px-3 py-1.5 rounded-md transition-all duration-150"
-                        style={{
-                            background: copied ? 'var(--color-accent-light)' : 'var(--color-bg-stone)',
-                            color:      copied ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                        }}
-                    >
-                        {copied ? '✓ Copied!' : 'Copy link'}
-                    </button>
-
-                    <button
-                        onClick={e => {
-                            e.stopPropagation()
-                            setShowQR(true)
-                        }}
-                        className="flex items-center justify-center rounded-md transition-all duration-150"
-                        style={{
-                            background: 'var(--color-bg-stone)',
-                            color:      'var(--color-text-secondary)',
-                            height:     '28px',
-                            width:      '28px',
-                            flexShrink: 0,
-                        }}
-                        title="Show QR code"
-                    >
-                        <QrCode size={14} />
-                    </button>
-
-                    <button
-                        onClick={e => {
-                            e.stopPropagation()
-                            onDeleteClick(poll)
-                        }}
-                        className="flex items-center justify-center rounded-md transition-all duration-150"
-                        style={{
-                            background: 'var(--color-danger-bg)',
-                            color:      'var(--color-danger)',
-                            height:     '28px',
-                            width:      '28px',
-                            flexShrink: 0,
-                        }}
-                        title="Delete poll"
-                    >
-                        <Trash2 size={14} />
-                    </button>
-
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '18px' }}>→</span>
-                </div>
-
             </div>
 
             <QRModal
@@ -172,14 +217,47 @@ function PollCard({
                 pollId={poll.id}
                 question={poll.question}
             />
+        </>
+    )
+}
+
+function StatsBar({ voterId }: { voterId: string }) {
+    const { stats, loading } = useStats(voterId)
+
+    if (loading) return null
+
+    return (
+        <div className="grid gap-3 mb-8" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            {[
+                { label: 'Total polls',  value: stats.totalPolls,  sub: 'all time'          },
+                { label: 'Total votes',  value: stats.totalVotes,  sub: 'across all polls'  },
+                { label: 'Active polls', value: stats.activePolls, sub: 'open right now'    },
+            ].map(stat => (
+                <div
+                    key={stat.label}
+                    className="rounded-md px-4 py-3"
+                    style={{ background: 'var(--color-bg-subtle)', border: '1px solid var(--color-border-default)' }}
+                >
+                    <p className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
+                        {stat.label}
+                    </p>
+                    <p className="text-2xl font-medium" style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.03em' }}>
+                        {stat.value}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                        {stat.sub}
+                    </p>
+                </div>
+            ))}
         </div>
     )
 }
 
 function DashboardScreen() {
-    const voterId                 = useVoterID()
+    const navigate = useNavigate()
+    const voterId                        = useVoterID()
     const { polls, loading, removePoll } = usePolls(voterId)
-    const { addToast }            = useToastStore()
+    const { addToast }                   = useToastStore()
 
     const [pollToDelete, setPollToDelete] = useState<PollWithCount | null>(null)
     const [deleting, setDeleting]         = useState(false)
@@ -219,6 +297,7 @@ function DashboardScreen() {
 
     return (
         <div>
+            <StatsBar voterId={voterId} />
 
             <div
                 className="flex items-center justify-between mb-8 pb-6"
@@ -251,9 +330,19 @@ function DashboardScreen() {
                     >
                         No polls yet
                     </p>
-                    <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                        Click "+ Create poll" in the top right to get started
+                    <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
+                        Create your first poll and share it with anyone
                     </p>
+                    <button
+                        onClick={() => navigate('/create')}
+                        className="text-sm font-medium px-4 py-2 rounded-md transition-all duration-150"
+                        style={{
+                            background: 'var(--color-accent)',
+                            color:      'var(--color-text-on-teal)',
+                        }}
+                    >
+                        Create a poll →
+                    </button>
                 </div>
             ) : (
                 <div className="flex flex-col gap-3">
@@ -267,7 +356,6 @@ function DashboardScreen() {
                 </div>
             )}
 
-            {/* Delete confirmation modal */}
             <Modal
                 open={!!pollToDelete}
                 onClose={() => !deleting && setPollToDelete(null)}
@@ -278,44 +366,31 @@ function DashboardScreen() {
                 >
                     Delete poll?
                 </h2>
-                <p
-                    className="text-sm mb-1"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                >
+                <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>
                     "{pollToDelete?.question}"
                 </p>
-                <p
-                    className="text-xs mb-6"
-                    style={{ color: 'var(--color-text-muted)' }}
-                >
+                <p className="text-xs mb-6" style={{ color: 'var(--color-text-muted)' }}>
                     This will permanently delete the poll and all its votes. This cannot be undone.
                 </p>
                 <div className="flex gap-3">
                     <button
                         onClick={() => setPollToDelete(null)}
                         disabled={deleting}
-                        className="flex-1 h-10 text-sm font-medium rounded-md transition-all duration-150"
-                        style={{
-                            background: 'var(--color-bg-stone)',
-                            color:      'var(--color-text-secondary)',
-                        }}
+                        className="flex-1 h-10 text-sm font-medium rounded-md"
+                        style={{ background: 'var(--color-bg-stone)', color: 'var(--color-text-secondary)' }}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleDeleteConfirm}
                         disabled={deleting}
-                        className="flex-1 h-10 text-sm font-medium rounded-md transition-all duration-150"
-                        style={{
-                            background: 'var(--color-danger)',
-                            color:      '#fff',
-                        }}
+                        className="flex-1 h-10 text-sm font-medium rounded-md"
+                        style={{ background: 'var(--color-danger)', color: '#fff' }}
                     >
                         {deleting ? 'Deleting...' : 'Delete'}
                     </button>
                 </div>
             </Modal>
-
         </div>
     )
 }
