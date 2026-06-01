@@ -4,21 +4,6 @@ import { supabase } from '../lib/supabase'
 import useVoterID from '../hooks/useVoterID'
 import useToastStore from '../store/toastStore'
 
-type Expiry = 'none' | '1h' | '24h' | '7d'
-
-const EXPIRY_OPTIONS: { label: string; value: Expiry }[] = [
-    { label: 'No expiry', value: 'none' },
-    { label: '1 hour',   value: '1h'   },
-    { label: '24 hours', value: '24h'  },
-    { label: '7 days',   value: '7d'   },
-]
-
-function getExpiresAt(expiry: Expiry): string | null {
-    if (expiry === 'none') return null
-    const ms = { '1h': 3600000, '24h': 86400000, '7d': 604800000 }
-    return new Date(Date.now() + ms[expiry]).toISOString()
-}
-
 function CreatePollScreen() {
     const navigate     = useNavigate()
     const voterId      = useVoterID()
@@ -26,10 +11,13 @@ function CreatePollScreen() {
 
     const [question,     setQuestion]     = useState('')
     const [options,      setOptions]      = useState(['', ''])
-    const [expiry,       setExpiry]       = useState<Expiry>('none')
+    const [expiresAt,    setExpiresAt]    = useState<string | null>(null)
+    const [showCustom,   setShowCustom]   = useState(false)
     const [submitting,   setSubmitting]   = useState(false)
     const [error,        setError]        = useState<string | null>(null)
     const [requiresAuth, setRequiresAuth] = useState(false)
+    const [allowRevote,  setAllowRevote]  = useState(false)
+    const [showVoters,   setShowVoters]   = useState(false)
 
     const addOption = () => {
         if (options.length < 6) setOptions([...options, ''])
@@ -46,12 +34,35 @@ function CreatePollScreen() {
         setOptions(updated)
     }
 
-    const isValid =
-        question.trim().length > 0 &&
-        options.filter(o => o.trim().length > 0).length >= 2
+    const validOptions = options.filter(o => o.trim().length > 0)
+    const isValid      = question.trim().length > 0 && validOptions.length >= 2
+
+    const pad = (n: number) => String(n).padStart(2, '0')
+
+    const getMinStr = () => {
+        const now = new Date()
+        return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+    }
+
+    const getDefaultCustomStr = () => {
+        const d = new Date(Date.now() + 3600000)
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    }
+
+    const PRESETS = [
+        { label: 'No expiry', ms: null      },
+        { label: '1 hour',    ms: 3600000   },
+        { label: '24 hours',  ms: 86400000  },
+        { label: '7 days',    ms: 604800000 },
+    ]
 
     const handleSubmit = async () => {
         if (!isValid || !voterId) return
+
+        if (expiresAt && new Date(expiresAt) <= new Date()) {
+            setError('Expiry time must be in the future.')
+            return
+        }
         setSubmitting(true)
         setError(null)
 
@@ -59,11 +70,13 @@ function CreatePollScreen() {
             .from('polls')
             .insert({
                 question:      question.trim(),
-                options:       options.filter(o => o.trim().length > 0).map(o => o.trim()),
+                options:       validOptions.map(o => o.trim()),
                 status:        'open',
                 creator_id:    voterId,
-                expires_at:    getExpiresAt(expiry),
+                expires_at:    expiresAt,
                 requires_auth: requiresAuth,
+                allow_revote:  allowRevote,
+                show_voters:   showVoters,
             })
             .select()
             .single()
@@ -79,6 +92,36 @@ function CreatePollScreen() {
         addToast('Poll created!', 'success')
         navigate(`/results/${data.id}`)
     }
+
+    const CheckboxRow = ({
+                             id, checked, onChange, label,
+                         }: {
+        id: string; checked: boolean; onChange: (v: boolean) => void; label: string
+    }) => (
+        <div
+            className="flex items-center gap-3 px-4 py-3 rounded-md"
+            style={{
+                background: 'var(--color-bg-subtle)',
+                border:     '1px solid var(--color-border-default)',
+            }}
+        >
+            <input
+                type="checkbox"
+                id={id}
+                checked={checked}
+                onChange={e => onChange(e.target.checked)}
+                className="w-4 h-4 rounded cursor-pointer"
+                style={{ accentColor: 'var(--color-accent)' }}
+            />
+            <label
+                htmlFor={id}
+                className="text-sm cursor-pointer flex-1"
+                style={{ color: 'var(--color-text-secondary)' }}
+            >
+                {label}
+            </label>
+        </div>
+    )
 
     return (
         <div style={{ maxWidth: '480px', margin: '0 auto' }}>
@@ -160,11 +203,10 @@ function CreatePollScreen() {
                         </div>
                     ))}
                 </div>
-
                 {options.length < 6 && (
                     <button
                         onClick={addOption}
-                        className="mt-3 text-sm font-medium transition-all duration-150"
+                        className="mt-3 text-sm font-medium"
                         style={{ color: 'var(--color-accent)' }}
                     >
                         + Add option
@@ -178,46 +220,87 @@ function CreatePollScreen() {
                     Expires
                 </label>
                 <div className="flex gap-2 flex-wrap">
-                    {EXPIRY_OPTIONS.map(opt => (
-                        <button
-                            key={opt.value}
-                            onClick={() => setExpiry(opt.value)}
-                            className="text-sm px-3 py-1.5 rounded-md transition-all duration-150"
-                            style={{
-                                background: expiry === opt.value ? 'var(--color-accent)' : 'var(--color-bg-stone)',
-                                color:      expiry === opt.value ? 'var(--color-text-on-teal)' : 'var(--color-text-secondary)',
-                                border:     '1px solid transparent',
-                            }}
-                        >
-                            {opt.label}
-                        </button>
-                    ))}
+                    {PRESETS.map(opt => {
+                        const isActive = opt.ms === null
+                            ? expiresAt === null && !showCustom
+                            : !showCustom && expiresAt !== null &&
+                            Math.abs(new Date(expiresAt).getTime() - (Date.now() + opt.ms)) < 60000
+                        return (
+                            <button
+                                key={opt.label}
+                                onClick={() => {
+                                    setExpiresAt(opt.ms ? new Date(Date.now() + opt.ms).toISOString() : null)
+                                    setShowCustom(false)
+                                }}
+                                className="text-sm px-3 py-1.5 rounded-md transition-all duration-150"
+                                style={{
+                                    background: isActive ? 'var(--color-accent)' : 'var(--color-bg-stone)',
+                                    color:      isActive ? 'var(--color-text-on-teal)' : 'var(--color-text-secondary)',
+                                    border:     '1px solid transparent',
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        )
+                    })}
+                    <button
+                        onClick={() => {
+                            setShowCustom(!showCustom)
+                            if (!showCustom) setExpiresAt(new Date(Date.now() + 3600000).toISOString())
+                        }}
+                        className="text-sm px-3 py-1.5 rounded-md transition-all duration-150"
+                        style={{
+                            background: showCustom ? 'var(--color-accent)' : 'var(--color-bg-stone)',
+                            color:      showCustom ? 'var(--color-text-on-teal)' : 'var(--color-text-secondary)',
+                            border:     '1px solid transparent',
+                        }}
+                    >
+                        Custom
+                    </button>
                 </div>
+
+                {showCustom && (
+                    <div className="mt-3">
+                        <input
+                            type="datetime-local"
+                            min={getMinStr()}
+                            defaultValue={getDefaultCustomStr()}
+                            onChange={e => {
+                                if (e.target.value) setExpiresAt(new Date(e.target.value).toISOString())
+                            }}
+                            className="w-full text-sm rounded-md px-3 h-10 focus:outline-none transition-all duration-150"
+                            style={{
+                                background: 'var(--color-bg-card)',
+                                border:     '1px solid var(--color-border-default)',
+                                color:      'var(--color-text-primary)',
+                            }}
+                            onFocus={e => e.currentTarget.style.borderColor = 'var(--color-border-teal)'}
+                            onBlur={e  => e.currentTarget.style.borderColor = 'var(--color-border-default)'}
+                        />
+                    </div>
+                )}
             </div>
 
-            {/* Require sign in */}
-            <div
-                className="mb-8 flex items-center gap-3 px-4 py-3 rounded-md"
-                style={{
-                    background: 'var(--color-bg-subtle)',
-                    border:     '1px solid var(--color-border-default)',
-                }}
-            >
-                <input
-                    type="checkbox"
+            {/* Settings */}
+            <div className="flex flex-col gap-2 mb-8">
+                <CheckboxRow
                     id="requires_auth"
                     checked={requiresAuth}
-                    onChange={e => setRequiresAuth(e.target.checked)}
-                    className="w-4 h-4 rounded cursor-pointer"
-                    style={{ accentColor: 'var(--color-accent)' }}
+                    onChange={setRequiresAuth}
+                    label="Require Google sign in to vote"
                 />
-                <label
-                    htmlFor="requires_auth"
-                    className="text-sm cursor-pointer flex-1"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                >
-                    Require Google sign in to vote
-                </label>
+                <CheckboxRow
+                    id="allow_revote"
+                    checked={allowRevote}
+                    onChange={setAllowRevote}
+                    label="Allow voters to change their vote"
+                />
+                <CheckboxRow
+                    id="show_voters"
+                    checked={showVoters}
+                    onChange={setShowVoters}
+                    label="Show who voted (collect voter names)"
+                />
             </div>
 
             {/* Error */}

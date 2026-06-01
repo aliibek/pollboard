@@ -19,8 +19,7 @@ function ResultsScreen() {
 
     const [closing, setClosing] = useState(false)
     const [copied,  setCopied]  = useState(false)
-
-    const [showQR, setShowQR] = useState(false)
+    const [showQR,  setShowQR]  = useState(false)
 
     useRealtime(pollId ?? '', (vote: Vote) => addVote(vote))
 
@@ -39,22 +38,25 @@ function ResultsScreen() {
         return Math.round((getCount(index) / totalVotes) * 100)
     }
 
+    const COLORS = [
+        { bg: 'var(--color-accent-light)', text: 'var(--color-accent-hover)' },
+        { bg: 'var(--color-warning-bg)',   text: 'var(--color-warning)'      },
+        { bg: '#e0e7ff',                   text: '#3730a3'                   },
+        { bg: '#fce7f3',                   text: '#9d174d'                   },
+        { bg: '#d1fae5',                   text: '#065f46'                   },
+        { bg: '#fef9c3',                   text: '#854d0e'                   },
+    ]
+
     const handleClose = async () => {
         if (!pollId || !voterId) return
         setClosing(true)
-
         const { error } = await supabase
             .from('polls')
             .update({ status: 'closed' })
             .eq('id', pollId)
             .eq('creator_id', voterId)
-
         setClosing(false)
-
-        if (error) {
-            console.error(error)
-            return
-        }
+        if (error) { console.error(error); return }
         window.location.reload()
     }
 
@@ -64,7 +66,6 @@ function ResultsScreen() {
         setTimeout(() => setCopied(false), 2000)
     }
 
-    // --- Loading ---
     if (pollLoading || votesLoading) {
         return (
             <div className="flex items-center justify-center py-24">
@@ -103,10 +104,11 @@ function ResultsScreen() {
                     {isPollOpen ? (
                         <>
               <span
-                  className="w-2 h-2 rounded-full inline-block"
                   style={{
+                      width: '7px', height: '7px', borderRadius: '50%',
+                      display: 'inline-block', flexShrink: 0,
                       background: 'var(--color-accent)',
-                      animation:  'pulse-dot 2s ease-in-out infinite',
+                      animation: 'pulse-dot 2s ease-in-out infinite',
                   }}
               />
                             <span className="text-xs font-medium" style={{ color: 'var(--color-accent)' }}>
@@ -116,41 +118,38 @@ function ResultsScreen() {
                     ) : (
                         <span
                             className="text-xs font-medium px-2 py-0.5 rounded-full"
-                            style={{
-                                background: 'var(--color-bg-stone)',
-                                color:      'var(--color-text-muted)',
-                            }}
+                            style={{ background: 'var(--color-bg-stone)', color: 'var(--color-text-muted)' }}
                         >
               Closed
             </span>
                     )}
                 </div>
 
-                <button
-                    onClick={handleCopyVoteLink}
-                    className="text-xs font-medium px-3 py-1.5 rounded-md transition-all duration-150"
-                    style={{
-                        background: copied ? 'var(--color-accent-light)' : 'var(--color-bg-stone)',
-                        color:      copied ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                    }}
-                >
-                    {copied ? '✓ Copied!' : 'Copy vote link'}
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleCopyVoteLink}
+                        className="text-xs font-medium px-3 py-1.5 rounded-md transition-all duration-150"
+                        style={{
+                            background: copied ? 'var(--color-accent-light)' : 'var(--color-bg-stone)',
+                            color:      copied ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                        }}
+                    >
+                        {copied ? '✓ Copied!' : 'Copy vote link'}
+                    </button>
 
-                <button
-                    onClick={() => setShowQR(true)}
-                    className="flex items-center justify-center rounded-md transition-all duration-150"
-                    style={{
-                        background: 'var(--color-bg-stone)',
-                        color:      'var(--color-text-secondary)',
-                        height:     '28px',
-                        width:      '28px',
-                        flexShrink: 0,
-                    }}
-                    title="Show QR code"
-                >
-                    <QrCode size={14} />
-                </button>
+                    <button
+                        onClick={() => setShowQR(true)}
+                        className="flex items-center justify-center rounded-md transition-all duration-150"
+                        style={{
+                            background: 'var(--color-bg-stone)',
+                            color:      'var(--color-text-secondary)',
+                            height:     '28px', width: '28px', flexShrink: 0,
+                        }}
+                        title="Show QR code"
+                    >
+                        <QrCode size={14} />
+                    </button>
+                </div>
             </div>
 
             {/* Question */}
@@ -165,11 +164,12 @@ function ResultsScreen() {
             </p>
 
             {/* Bars */}
-            <div className="flex flex-col gap-5 mb-10">
+            <div className="flex flex-col gap-5 mb-8">
                 {poll.options.map((option, i) => {
-                    const pct   = getPercent(i)
-                    const count = getCount(i)
+                    const pct      = getPercent(i)
+                    const count    = getCount(i)
                     const isWinner = count === Math.max(...poll.options.map((_, j) => getCount(j))) && count > 0
+                    const color    = COLORS[i % COLORS.length]
 
                     return (
                         <div key={i}>
@@ -195,7 +195,7 @@ function ResultsScreen() {
                                     className="h-full rounded-full transition-all duration-700"
                                     style={{
                                         width:      `${pct}%`,
-                                        background: isWinner ? 'var(--color-accent)' : 'var(--color-border-strong)',
+                                        background: isWinner ? color.text : 'var(--color-border-strong)',
                                     }}
                                 />
                             </div>
@@ -204,15 +204,80 @@ function ResultsScreen() {
                 })}
             </div>
 
+            {/* Voters list — creator only */}
+            {poll.show_voters && isCreator && votes.length > 0 && (
+                <div className="mb-8">
+                    <div
+                        className="pb-3 mb-3"
+                        style={{ borderBottom: '1px solid var(--color-border-default)' }}
+                    >
+                        <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                            Who voted
+                        </p>
+                    </div>
+                    <div className="flex flex-col">
+                        {[...votes]
+                            .sort((a, b) => a.option_index - b.option_index)
+                            .map((vote, i, arr) => {
+                                const name     = vote.voter_name ?? null
+                                const initials = name
+                                    ? name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                    : '?'
+                                const option   = poll.options[vote.option_index] ?? 'Unknown'
+                                const color    = COLORS[vote.option_index % COLORS.length]
+
+                                return (
+                                    <div
+                                        key={vote.id}
+                                        className="flex items-center justify-between py-2.5"
+                                        style={{
+                                            borderBottom: i < arr.length - 1
+                                                ? '1px solid var(--color-border-default)'
+                                                : 'none',
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className="flex items-center justify-center rounded-full text-xs font-medium"
+                                                style={{
+                                                    width:      '28px',
+                                                    height:     '28px',
+                                                    flexShrink: 0,
+                                                    background: name ? color.bg : 'var(--color-bg-stone)',
+                                                    color:      name ? color.text : 'var(--color-text-muted)',
+                                                }}
+                                            >
+                                                {initials}
+                                            </div>
+                                            <span
+                                                className="text-sm"
+                                                style={{
+                                                    color:     name ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                                                    fontStyle: name ? 'normal' : 'italic',
+                                                }}
+                                            >
+                        {name ?? 'Anonymous'}
+                      </span>
+                                        </div>
+                                        <span
+                                            className="text-xs font-medium px-2 py-0.5 rounded-full"
+                                            style={{ background: color.bg, color: color.text }}
+                                        >
+                      {option}
+                    </span>
+                                    </div>
+                                )
+                            })}
+                    </div>
+                </div>
+            )}
+
             {/* Actions */}
             <div className="flex flex-col gap-3">
                 <button
                     onClick={() => navigate(`/vote/${pollId}`)}
                     className="w-full h-10 text-sm font-medium rounded-md transition-all duration-150"
-                    style={{
-                        background: 'var(--color-bg-stone)',
-                        color:      'var(--color-text-secondary)',
-                    }}
+                    style={{ background: 'var(--color-bg-stone)', color: 'var(--color-text-secondary)' }}
                 >
                     Vote screen
                 </button>
@@ -222,10 +287,7 @@ function ResultsScreen() {
                         onClick={handleClose}
                         disabled={closing}
                         className="w-full h-10 text-sm font-medium rounded-md transition-all duration-150"
-                        style={{
-                            background: 'var(--color-danger-bg)',
-                            color:      'var(--color-danger)',
-                        }}
+                        style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}
                     >
                         {closing ? 'Closing...' : 'Close poll'}
                     </button>
