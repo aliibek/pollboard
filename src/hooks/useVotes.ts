@@ -29,7 +29,11 @@ function useVotes(pollId: string) {
         })
     }
 
-    return { votes, loading, addVote }
+    const removeVote = (voteId: string) => {
+        setVotes(prev => prev.filter(v => v.id !== voteId))
+    }
+
+    return { votes, loading, addVote, removeVote }
 }
 
 export default useVotes

@@ -2,7 +2,11 @@ import { useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { type Vote } from '../types'
 
-function useRealtime(pollId: string, onNewVote: (vote: Vote) => void) {
+function useRealtime(
+    pollId: string,
+    onNewVote: (vote: Vote) => void,
+    onDeleteVote?: (voteId: string) => void
+) {
     useEffect(() => {
         if (!pollId) return
 
@@ -18,6 +22,18 @@ function useRealtime(pollId: string, onNewVote: (vote: Vote) => void) {
                 },
                 (payload) => {
                     onNewVote(payload.new as Vote)
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event:  'DELETE',
+                    schema: 'public',
+                    table:  'votes',
+                    filter: `poll_id=eq.${pollId}`,
+                },
+                (payload) => {
+                    if (onDeleteVote) onDeleteVote(payload.old.id)
                 }
             )
             .subscribe()

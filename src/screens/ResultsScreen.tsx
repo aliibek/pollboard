@@ -15,13 +15,13 @@ function ResultsScreen() {
     const voterId    = useVoterID()
 
     const { poll, loading: pollLoading } = usePoll(pollId ?? '')
-    const { votes, loading: votesLoading, addVote } = useVotes(pollId ?? '')
+    const { votes, loading: votesLoading, addVote, removeVote } = useVotes(pollId ?? '')
 
     const [closing, setClosing] = useState(false)
     const [copied,  setCopied]  = useState(false)
     const [showQR,  setShowQR]  = useState(false)
 
-    useRealtime(pollId ?? '', (vote: Vote) => addVote(vote))
+    useRealtime(pollId ?? '', (vote: Vote) => addVote(vote), (voteId: string) => removeVote(voteId))
 
     const isCreator = poll?.creator_id === voterId
     const isPollOpen =

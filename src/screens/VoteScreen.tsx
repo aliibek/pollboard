@@ -11,6 +11,7 @@ function VoteScreen() {
     const voterId     = useVoterID()
     const { user, signInWithGoogle } = useAuth()
     const { poll, loading, error } = usePoll(pollId ?? '')
+    const [votedSuccessfully, setVotedSuccessfully] = useState(false)
 
     const [selected,        setSelected]        = useState<number | null>(null)
     const [submitting,      setSubmitting]       = useState(false)
@@ -100,7 +101,7 @@ function VoteScreen() {
             return
         }
 
-        navigate(`/results/${pollId}`)
+        setVotedSuccessfully(true)
     }
 
     // --- Loading ---
@@ -259,6 +260,51 @@ function VoteScreen() {
                         </button>
                     )}
                 </div>
+            </div>
+        )
+    }
+
+    // --- Thank you screen ---
+    if (votedSuccessfully) {
+        return (
+            <div
+                style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center', paddingTop: '60px' }}
+            >
+                <div
+                    className="flex items-center justify-center rounded-full mx-auto mb-6"
+                    style={{
+                        width:      '56px',
+                        height:     '56px',
+                        background: 'var(--color-accent-light)',
+                    }}
+                >
+                    <span style={{ fontSize: '24px' }}>✓</span>
+                </div>
+
+                <h1
+                    className="text-2xl font-medium mb-3"
+                    style={{ color: 'var(--color-text-primary)', letterSpacing: '-0.03em' }}
+                >
+                    Thanks for voting!
+                </h1>
+
+                <p
+                    className="text-sm mb-8"
+                    style={{ color: 'var(--color-text-muted)' }}
+                >
+                    Your vote has been counted.
+                </p>
+
+                <button
+                    onClick={() => navigate(`/results/${pollId}`)}
+                    className="w-full h-11 text-sm font-medium rounded-md transition-all duration-150"
+                    style={{
+                        background: 'var(--color-accent)',
+                        color:      'var(--color-text-on-teal)',
+                    }}
+                >
+                    See results →
+                </button>
             </div>
         )
     }
