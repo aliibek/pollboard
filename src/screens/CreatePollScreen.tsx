@@ -127,7 +127,7 @@ function CreatePollScreen() {
         <div style={{ maxWidth: '480px', margin: '0 auto' }}>
 
             <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/dashboard')}
                 className="text-sm mb-6 flex items-center gap-1"
                 style={{ color: 'var(--color-text-secondary)' }}
             >

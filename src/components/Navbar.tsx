@@ -7,6 +7,10 @@ function Navbar() {
     const { isDark, toggle } = useThemeStore()
     const { user, signInWithGoogle, signOut } = useAuth()
 
+    const handleLogoClick = () => {
+        navigate(user ? '/dashboard' : '/')
+    }
+
     return (
         <nav
             className="w-full px-4 sm:px-6 h-16 flex items-center justify-between"
@@ -19,7 +23,7 @@ function Navbar() {
                 src="/colored-logo.svg"
                 alt="PollBoard"
                 style={{ height: '30px', cursor: 'pointer' }}
-                onClick={() => navigate('/')}
+                onClick={handleLogoClick}
             />
 
             <div className="flex items-center gap-3">
@@ -59,7 +63,7 @@ function Navbar() {
                             style={{
                                 background: 'var(--color-bg-stone)',
                                 color:      'var(--color-text-secondary)',
-                                height: '32px',
+                                height:     '32px',
                             }}
                         >
                             Sign out
