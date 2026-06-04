@@ -20,6 +20,7 @@ function ResultsScreen() {
     const [closing, setClosing] = useState(false)
     const [copied,  setCopied]  = useState(false)
     const [showQR,  setShowQR]  = useState(false)
+    const [reopening, setReopening] = useState(false)
 
     useRealtime(pollId ?? '', (vote: Vote) => addVote(vote), (voteId: string) => removeVote(voteId))
 
@@ -56,6 +57,19 @@ function ResultsScreen() {
             .eq('id', pollId)
             .eq('creator_id', voterId)
         setClosing(false)
+        if (error) { console.error(error); return }
+        window.location.reload()
+    }
+
+    const handleReopen = async () => {
+        if (!pollId || !voterId) return
+        setReopening(true)
+        const { error } = await supabase
+            .from('polls')
+            .update({ status: 'open', expires_at: null })
+            .eq('id', pollId)
+            .eq('creator_id', voterId)
+        setReopening(false)
         if (error) { console.error(error); return }
         window.location.reload()
     }
@@ -290,6 +304,17 @@ function ResultsScreen() {
                         style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger)' }}
                     >
                         {closing ? 'Closing...' : 'Close poll'}
+                    </button>
+                )}
+
+                {isCreator && !isPollOpen && poll.status === 'closed' && (
+                    <button
+                        onClick={handleReopen}
+                        disabled={reopening}
+                        className="w-full h-10 text-sm font-medium rounded-md transition-all duration-150"
+                        style={{ background: 'var(--color-bg-stone)', color: 'var(--color-text-secondary)' }}
+                    >
+                        {reopening ? 'Reopening...' : 'Reopen poll'}
                     </button>
                 )}
             </div>
